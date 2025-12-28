@@ -43,7 +43,6 @@ class MainActivity : FlutterFragmentActivity() {
           "getBackgroundConditions" -> {
             val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
             val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-            val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
             val backgroundRestricted =
               if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) activityManager.isBackgroundRestricted else false
             val batteryOptimizationsIgnored = powerManager.isIgnoringBatteryOptimizations(packageName)
