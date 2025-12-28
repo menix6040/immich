@@ -24,6 +24,7 @@ import 'package:immich_mobile/providers/tab.provider.dart';
 import 'package:immich_mobile/providers/websocket.provider.dart';
 import 'package:immich_mobile/services/app_settings.service.dart';
 import 'package:immich_mobile/services/background.service.dart';
+import 'package:immich_mobile/services/memory_notification.service.dart';
 import 'package:isar/isar.dart';
 import 'package:logging/logging.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -124,6 +125,8 @@ class AppLifeCycleNotifier extends StateNotifier<AppLifeCycleEnum> {
 
       _ref.invalidate(memoryFutureProvider);
     }
+
+    await _ref.read(memoryNotificationServiceProvider).cancelInForeground();
   }
 
   Future<void> _safeRun(Future<void> action, String debugName) async {
@@ -242,6 +245,8 @@ class AppLifeCycleNotifier extends StateNotifier<AppLifeCycleEnum> {
       _ref.read(websocketProvider.notifier).disconnect();
     }
 
+    unawaited(_ref.read(memoryNotificationServiceProvider).scheduleInBackground());
+
     try {
       await LogService.I.flush();
     } catch (_) {}
@@ -253,6 +258,8 @@ class AppLifeCycleNotifier extends StateNotifier<AppLifeCycleEnum> {
     if (Store.isBetaTimelineEnabled) {
       unawaited(_ref.read(backgroundWorkerLockServiceProvider).unlock());
     }
+
+    unawaited(_ref.read(memoryNotificationServiceProvider).scheduleInBackground());
 
     // Flush logs before closing database
     try {

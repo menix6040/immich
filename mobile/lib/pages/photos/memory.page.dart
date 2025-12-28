@@ -9,11 +9,14 @@ import 'package:immich_mobile/models/memories/memory.model.dart';
 import 'package:immich_mobile/providers/asset_viewer/current_asset.provider.dart';
 import 'package:immich_mobile/providers/asset_viewer/video_player_value_provider.dart';
 import 'package:immich_mobile/providers/haptic_feedback.provider.dart';
+import 'package:immich_mobile/services/app_settings.service.dart';
+import 'package:immich_mobile/utils/hooks/app_settings_update_hook.dart';
 import 'package:immich_mobile/widgets/common/immich_image.dart';
 import 'package:immich_mobile/widgets/memories/memory_bottom_info.dart';
 import 'package:immich_mobile/widgets/memories/memory_card.dart';
 import 'package:immich_mobile/widgets/memories/memory_epilogue.dart';
 import 'package:immich_mobile/widgets/memories/memory_progress_indicator.dart';
+import 'package:immich_mobile/presentation/widgets/memory/memory_music_controller.dart';
 
 @RoutePage()
 /// Expects [currentAssetProvider] to be set before navigating to this page
@@ -31,6 +34,11 @@ class MemoryPage extends HookConsumerWidget {
     final assetProgress = useState("${currentAssetPage.value + 1}|${currentMemory.value.assets.length}");
     const bgColor = Colors.black;
     final currentAsset = useState<Asset?>(null);
+    final musicEnabled = useAppSettingsState(AppSettingsEnum.memoryMusicEnabled);
+    final musicVolume = useAppSettingsState(AppSettingsEnum.memoryMusicVolume);
+    final musicController = useMemoized(
+      () => MemoryMusicController(volume: musicVolume.value / 100.0, enabled: musicEnabled.value),
+    );
 
     /// The list of all of the asset page controllers
     final memoryAssetPageControllers = List.generate(memories.length, (i) => usePageController());
@@ -39,13 +47,38 @@ class MemoryPage extends HookConsumerWidget {
     final memoryPageController = usePageController(initialPage: memoryIndex);
 
     useEffect(() {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // ignore: unawaited_futures
+        musicController.changeMemory('memory-$memoryIndex');
+      });
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (!context.mounted) {
+          return;
+        }
+        // ignore: unawaited_futures
+        musicController.changeMemory('memory-$memoryIndex');
+      });
+      if (musicEnabled.value) {
+        // ignore: unawaited_futures
+        musicController.precacheAll();
+      }
       // Memories is an immersive activity
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
       return () {
         // Clean up to normal edge to edge when we are done
+        // ignore: unawaited_futures
+        musicController.shutdown();
         SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
       };
-    });
+    }, const []);
+
+    useEffect(() {
+      // ignore: unawaited_futures
+      musicController.setEnabled(musicEnabled.value);
+      // ignore: unawaited_futures
+      musicController.setVolume(musicVolume.value / 100.0);
+      return null;
+    }, [musicEnabled.value, musicVolume.value]);
 
     toNextMemory() {
       memoryPageController.nextPage(duration: const Duration(milliseconds: 500), curve: Curves.easeIn);
@@ -204,6 +237,13 @@ class MemoryPage extends HookConsumerWidget {
               if (pageNumber < memories.length) {
                 currentMemoryIndex.value = pageNumber;
                 currentMemory.value = memories[pageNumber];
+                Future.delayed(const Duration(milliseconds: 100), () {
+                  if (!context.mounted) {
+                    return;
+                  }
+                  // ignore: unawaited_futures
+                  musicController.changeMemory('memory-$pageNumber');
+                });
               }
 
               currentAssetPage.value = 0;

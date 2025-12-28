@@ -82,7 +82,12 @@ enum StoreKey<T> {
   useWifiForUploadPhotos<bool>._(1005),
   needBetaMigration<bool>._(1006),
   // TODO: Remove this after patching open-api
-  shouldResetSync<bool>._(1007);
+  shouldResetSync<bool>._(1007),
+  memoryNotificationLastCount<int>._(1008),
+  memoryNotificationLastAt<DateTime>._(1009),
+  memoryMusicEnabled<bool>._(1010),
+  memoryMusicVolume<int>._(1011),
+  memoryNotificationDebugForce<bool>._(1012);
 
   const StoreKey._(this.id);
   final int id;

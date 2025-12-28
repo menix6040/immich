@@ -45,6 +45,7 @@ import 'package:immich_mobile/wm_executor.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:logging/logging.dart';
 import 'package:timezone/data/latest.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 void main() async {
   ImmichWidgetsBinding();
@@ -101,6 +102,30 @@ Future<void> initApp() async {
   };
 
   initializeTimeZones();
+  try {
+    final nowLocal = DateTime.now();
+    final offsetMs = nowLocal.timeZoneOffset.inMilliseconds;
+    final abbr = nowLocal.timeZoneName;
+    tz.Location preferred;
+    if (Platform.isAndroid && (abbr == "EET" || abbr == "EEST")) {
+      preferred = tz.getLocation("Europe/Kyiv");
+    } else {
+      final locations = tz.timeZoneDatabase.locations.values
+          .where((location) => location.currentTimeZone.offset == offsetMs)
+          .toList();
+      preferred = locations.firstWhere(
+        (location) => location.currentTimeZone.abbreviation.toLowerCase() == abbr.toLowerCase(),
+        orElse: () => locations.firstWhere(
+          (location) => !location.currentTimeZone.abbreviation.contains("0"),
+          orElse: () => locations.isNotEmpty ? locations.first : tz.getLocation("UTC"),
+        ),
+      );
+    }
+    tz.setLocalLocation(preferred);
+    dPrint(() => "Local timezone set to ${preferred.name} (abbr=$abbr)");
+  } catch (e, stack) {
+    log.warning("Failed to set local timezone", e, stack);
+  }
 
   // Initialize the file downloader
   await FileDownloader().configure(

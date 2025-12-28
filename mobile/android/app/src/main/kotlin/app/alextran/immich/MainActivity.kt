@@ -3,10 +3,13 @@ package app.alextran.immich
 import android.content.Context
 import android.os.Build
 import android.os.ext.SdkExtensions
+import android.app.ActivityManager
+import android.os.PowerManager
 import app.alextran.immich.background.BackgroundEngineLock
 import app.alextran.immich.background.BackgroundWorkerApiImpl
 import app.alextran.immich.background.BackgroundWorkerFgHostApi
 import app.alextran.immich.background.BackgroundWorkerLockApi
+import app.alextran.immich.background.MemoryNotificationScheduler
 import app.alextran.immich.connectivity.ConnectivityApi
 import app.alextran.immich.connectivity.ConnectivityApiImpl
 import app.alextran.immich.core.ImmichPlugin
@@ -17,11 +20,43 @@ import app.alextran.immich.sync.NativeSyncApiImpl26
 import app.alextran.immich.sync.NativeSyncApiImpl30
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterFragmentActivity() {
   override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
     super.configureFlutterEngine(flutterEngine)
     registerPlugins(this, flutterEngine)
+    MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "immich/debug")
+      .setMethodCallHandler { call, result ->
+        when (call.method) {
+          "scheduleMemoryWorkerInMinutes" -> {
+            val minutes = call.argument<Int>("minutes") ?: 1
+            MemoryNotificationScheduler.scheduleDebug(this, minutes.toLong())
+            result.success(null)
+          }
+          else -> result.notImplemented()
+        }
+      }
+    MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "immich/system")
+      .setMethodCallHandler { call, result ->
+        when (call.method) {
+          "getBackgroundConditions" -> {
+            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+            val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+            val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            val backgroundRestricted =
+              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) activityManager.isBackgroundRestricted else false
+            val batteryOptimizationsIgnored = powerManager.isIgnoringBatteryOptimizations(packageName)
+            result.success(
+              mapOf(
+                "backgroundRestricted" to backgroundRestricted,
+                "batteryOptimizationsIgnored" to batteryOptimizationsIgnored
+              )
+            )
+          }
+          else -> result.notImplemented()
+        }
+      }
   }
 
   companion object {

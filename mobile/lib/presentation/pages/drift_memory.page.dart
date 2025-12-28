@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -10,9 +12,12 @@ import 'package:immich_mobile/extensions/translate_extensions.dart';
 import 'package:immich_mobile/presentation/widgets/images/image_provider.dart';
 import 'package:immich_mobile/presentation/widgets/memory/memory_bottom_info.widget.dart';
 import 'package:immich_mobile/presentation/widgets/memory/memory_card.widget.dart';
+import 'package:immich_mobile/presentation/widgets/memory/memory_music_controller.dart';
 import 'package:immich_mobile/providers/asset_viewer/video_player_value_provider.dart';
 import 'package:immich_mobile/providers/haptic_feedback.provider.dart';
 import 'package:immich_mobile/providers/infrastructure/asset_viewer/current_asset.provider.dart';
+import 'package:immich_mobile/services/app_settings.service.dart';
+import 'package:immich_mobile/utils/hooks/app_settings_update_hook.dart';
 import 'package:immich_mobile/widgets/memories/memory_epilogue.dart';
 import 'package:immich_mobile/widgets/memories/memory_progress_indicator.dart';
 
@@ -42,6 +47,11 @@ class DriftMemoryPage extends HookConsumerWidget {
     final assetProgress = useState("${currentAssetPage.value + 1}|${currentMemory.value.assets.length}");
     const bgColor = Colors.black;
     final currentAsset = useState<RemoteAsset?>(null);
+    final musicEnabled = useAppSettingsState(AppSettingsEnum.memoryMusicEnabled);
+    final musicVolume = useAppSettingsState(AppSettingsEnum.memoryMusicVolume);
+    final musicController = useMemoized(
+      () => MemoryMusicController(volume: musicVolume.value / 100.0, enabled: musicEnabled.value),
+    );
 
     /// The list of all of the asset page controllers
     final memoryAssetPageControllers = List.generate(memories.length, (i) => usePageController());
@@ -50,13 +60,34 @@ class DriftMemoryPage extends HookConsumerWidget {
     final memoryPageController = usePageController(initialPage: memoryIndex);
 
     useEffect(() {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // ignore: unawaited_futures
+        musicController.changeMemory(memories[memoryIndex].id);
+      });
+      Future.delayed(const Duration(milliseconds: 300), () {
+        // ignore: unawaited_futures
+        musicController.changeMemory(memories[memoryIndex].id);
+      });
+      if (musicEnabled.value) {
+        // ignore: unawaited_futures
+        musicController.precacheAll();
+      }
       // Memories is an immersive activity
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
       return () {
         // Clean up to normal edge to edge when we are done
+        unawaited(musicController.shutdown());
         SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
       };
-    });
+    }, const []);
+
+    useEffect(() {
+      // ignore: unawaited_futures
+      musicController.setEnabled(musicEnabled.value);
+      // ignore: unawaited_futures
+      musicController.setVolume(musicVolume.value / 100.0);
+      return null;
+    }, [musicEnabled.value, musicVolume.value]);
 
     toNextMemory() {
       memoryPageController.nextPage(duration: const Duration(milliseconds: 500), curve: Curves.easeIn);
@@ -215,6 +246,10 @@ class DriftMemoryPage extends HookConsumerWidget {
 
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   DriftMemoryPage.setMemory(ref, memories[pageNumber]);
+                });
+                Future.delayed(const Duration(milliseconds: 100), () {
+                  // ignore: unawaited_futures
+                  musicController.changeMemory(memories[pageNumber].id);
                 });
               }
 

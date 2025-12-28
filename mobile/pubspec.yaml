@@ -52,6 +52,7 @@ dependencies:
       ref: 'bb1dca40fe87a001122e5d43bc6254718cb49f3a'
       path: packages/isar/
   isar_community_flutter_libs: 3.3.0-dev.3
+  just_audio: ^0.9.40
   local_auth: ^2.3.0
   logging: ^1.3.0
   maplibre_gl: ^0.22.0
@@ -126,6 +127,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+    - assets/memories/
   fonts:
     - family: Inconsolata
       fonts:
