@@ -64,10 +64,6 @@ class DriftMemoryPage extends HookConsumerWidget {
         // ignore: unawaited_futures
         musicController.changeMemory(memories[memoryIndex].id);
       });
-      Future.delayed(const Duration(milliseconds: 300), () {
-        // ignore: unawaited_futures
-        musicController.changeMemory(memories[memoryIndex].id);
-      });
       if (musicEnabled.value) {
         // ignore: unawaited_futures
         musicController.precacheAll();
@@ -247,10 +243,8 @@ class DriftMemoryPage extends HookConsumerWidget {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   DriftMemoryPage.setMemory(ref, memories[pageNumber]);
                 });
-                Future.delayed(const Duration(milliseconds: 100), () {
-                  // ignore: unawaited_futures
-                  musicController.changeMemory(memories[pageNumber].id);
-                });
+                // ignore: unawaited_futures
+                musicController.changeMemory(memories[pageNumber].id);
               }
 
               currentAssetPage.value = 0;

@@ -282,16 +282,6 @@ class NotificationSetting extends HookConsumerWidget {
             log.info("Scheduled debug WorkManager worker in 1 minute");
           },
         ),
-      if (kDebugMode)
-        SettingsButtonListTile(
-          icon: Icons.music_note_outlined,
-          title: 'Debug: audio test',
-          subtileText: 'Open test player for memory tracks',
-          buttonText: 'Open',
-          onButtonTap: () {
-            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AudioTestPage()));
-          },
-        ),
     ];
 
     return SettingsSubPageScaffold(settings: notificationSettings);

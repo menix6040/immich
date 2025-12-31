@@ -51,13 +51,6 @@ class MemoryPage extends HookConsumerWidget {
         // ignore: unawaited_futures
         musicController.changeMemory('memory-$memoryIndex');
       });
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (!context.mounted) {
-          return;
-        }
-        // ignore: unawaited_futures
-        musicController.changeMemory('memory-$memoryIndex');
-      });
       if (musicEnabled.value) {
         // ignore: unawaited_futures
         musicController.precacheAll();
@@ -237,13 +230,8 @@ class MemoryPage extends HookConsumerWidget {
               if (pageNumber < memories.length) {
                 currentMemoryIndex.value = pageNumber;
                 currentMemory.value = memories[pageNumber];
-                Future.delayed(const Duration(milliseconds: 100), () {
-                  if (!context.mounted) {
-                    return;
-                  }
-                  // ignore: unawaited_futures
-                  musicController.changeMemory('memory-$pageNumber');
-                });
+                // ignore: unawaited_futures
+                musicController.changeMemory('memory-$pageNumber');
               }
 
               currentAssetPage.value = 0;
