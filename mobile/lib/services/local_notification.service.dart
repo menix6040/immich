@@ -187,7 +187,7 @@ class LocalNotificationService {
           uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
           payload: memoryNotificationPayload,
         );
-      } on PlatformException catch (e) {
+      } on PlatformException {
         rethrow;
       }
     }

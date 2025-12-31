@@ -4,7 +4,6 @@ import 'dart:ui' show DartPluginRegistrant;
 
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter/services.dart';
 import 'package:immich_mobile/domain/models/store.model.dart';
 import 'package:immich_mobile/entities/store.entity.dart';
 import 'package:immich_mobile/platform/background_worker_api.g.dart';
@@ -152,7 +151,10 @@ class MemoryNotificationService {
     return _templates[random.nextInt(_templates.length)];
   }
 
-  _MemoryNotificationTemplate debugRandomTemplate() => _randomTemplate();
+  ({String title, String body}) debugRandomTemplate({int count = 3}) {
+    final template = _randomTemplate();
+    return (title: template.title, body: template.bodyForCount(count));
+  }
 
   Future<void> showIfNewMemoriesNow() async {
     if (!_ref.read(authProvider).isAuthenticated) {
@@ -212,10 +214,10 @@ Future<void> memoryNotificationWorkerEntrypoint() async {
   await notificationService.setup();
   final debugForce = Store.tryGet(StoreKey.memoryNotificationDebugForce) ?? false;
   if (debugForce) {
-    final template = container.read(memoryNotificationServiceProvider).debugRandomTemplate();
+    final template = container.read(memoryNotificationServiceProvider).debugRandomTemplate(count: 3);
     await notificationService.showMemoryNotificationCustom(
       title: template.title,
-      body: template.bodyForCount(3),
+      body: template.body,
     );
     await Store.put(StoreKey.memoryNotificationDebugForce, false);
   } else {

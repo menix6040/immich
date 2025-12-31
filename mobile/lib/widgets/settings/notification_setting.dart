@@ -43,9 +43,9 @@ class NotificationSetting extends HookConsumerWidget {
 
     final hasPermission = permissionService == PermissionStatus.granted;
 
-    openAppNotificationSettings(BuildContext ctx) {
+    Future<void> openAppNotificationSettings(BuildContext ctx) async {
       ctx.pop();
-      openAppSettings();
+      await openAppSettings();
     }
 
     // When permissions are permanently denied, you need to go to settings to
@@ -75,7 +75,12 @@ class NotificationSetting extends HookConsumerWidget {
             ),
             actions: [
               ElevatedButton(
-                onPressed: () => launchUrl(Uri.parse('https://dontkillmyapp.com'), mode: LaunchMode.externalApplication),
+                onPressed: () async {
+                  await launchUrl(
+                    Uri.parse('https://dontkillmyapp.com'),
+                    mode: LaunchMode.externalApplication,
+                  );
+                },
                 child: const Text(
                   "backup_controller_page_background_battery_info_link",
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
@@ -111,7 +116,7 @@ class NotificationSetting extends HookConsumerWidget {
             final restricted = result?['backgroundRestricted'] == true;
             if (restricted) {
               askedBackgroundRestricted.value = true;
-              showDialog<void>(
+              await showDialog<void>(
                 context: context,
                 builder: (ctx) => AlertDialog(
                   title: const Text('Background activity restricted'),
@@ -121,8 +126,8 @@ class NotificationSetting extends HookConsumerWidget {
                   ),
                   actions: [
                     TextButton(
-                      onPressed: () {
-                        openAppSettings();
+                      onPressed: () async {
+                        await openAppSettings();
                         ctx.pop();
                       },
                       child: const Text('Open settings'),
@@ -147,12 +152,14 @@ class NotificationSetting extends HookConsumerWidget {
           title: 'notification_permission_list_tile_title'.tr(),
           subtileText: 'notification_permission_list_tile_content'.tr(),
           buttonText: 'notification_permission_list_tile_enable_button'.tr(),
-          onButtonTap: () =>
-              ref.watch(notificationPermissionProvider.notifier).requestNotificationPermission().then((permission) {
-                if (permission == PermissionStatus.permanentlyDenied) {
-                  showPermissionsDialog();
-                }
-              }),
+          onButtonTap: () async {
+            final permission = await ref
+                .watch(notificationPermissionProvider.notifier)
+                .requestNotificationPermission();
+            if (permission == PermissionStatus.permanentlyDenied) {
+              showPermissionsDialog();
+            }
+          },
         ),
       SettingsSwitchListTile(
         enabled: hasPermission,
@@ -199,7 +206,7 @@ class NotificationSetting extends HookConsumerWidget {
             await ref.read(notificationPermissionProvider.notifier).requestNotificationPermission();
           }
 
-          showDialog<void>(
+          await showDialog<void>(
             context: context,
             builder: (ctx) => AlertDialog(
               title: const Text('Background conditions'),
@@ -232,11 +239,10 @@ class NotificationSetting extends HookConsumerWidget {
             if (!hasPermission) {
               await ref.read(notificationPermissionProvider.notifier).requestNotificationPermission();
             }
-            final template = ref.read(memoryNotificationServiceProvider).debugRandomTemplate();
-            final body = template.bodyForCount(3);
+            final template = ref.read(memoryNotificationServiceProvider).debugRandomTemplate(count: 3);
             await ref.read(localNotificationService).showMemoryNotificationCustom(
               title: template.title,
-              body: body,
+              body: template.body,
             );
           },
         ),
@@ -250,13 +256,13 @@ class NotificationSetting extends HookConsumerWidget {
             if (!hasPermission) {
               await ref.read(notificationPermissionProvider.notifier).requestNotificationPermission();
             }
-            final template = ref.read(memoryNotificationServiceProvider).debugRandomTemplate();
+            final template = ref.read(memoryNotificationServiceProvider).debugRandomTemplate(count: 3);
             final nowLocal = DateTime.now();
             final scheduledDateTime = nowLocal.add(const Duration(minutes: 1));
             final scheduled = tz.TZDateTime.from(scheduledDateTime, tz.local);
             await ref.read(localNotificationService).scheduleMemoryNotifications(
                   title: template.title,
-                  body: template.bodyForCount(3),
+                  body: template.body,
                   scheduleTimes: [scheduled],
                 );
             log.info(
